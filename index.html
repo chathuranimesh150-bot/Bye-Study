@@ -2,237 +2,312 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Hub | Offline Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Study Hub | Universal Pro</title>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- External Libraries (Will be cached by browser once loaded) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root { --primary: #0f172a; --brand: #2563eb; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f8fafc; 
+            color: #1e293b; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
 
         #auth-overlay {
             background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98)), 
                         url('https://images.unsplash.com/photo-1434031211660-84c11e50a3a7?auto=format&fit=crop&q=80');
-            background-size: cover; background-position: center; z-index: 1000;
+            background-size: cover; background-position: center; z-index: 3000;
         }
 
-        .ict-input { border: 2px solid #f1f5f9; background: #f8fafc; transition: all 0.2s; }
+        .ict-input { border: 2px solid #f1f5f9; background: #f8fafc; transition: all 0.2s; font-size: 16px; /* Prevents iOS zoom */ }
         .ict-input:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
 
-        .nav-btn.active { background: var(--brand); color: white; transform: scale(1.02); }
+        /* Responsive Sidebar/Bottom Nav */
+        @media (max-width: 1023px) {
+            #main-sidebar {
+                width: 100%;
+                height: auto;
+                bottom: 0;
+                flex-direction: row;
+                padding: 10px;
+                border-top: 1px solid #1e293b;
+            }
+            #main-sidebar nav {
+                display: flex;
+                width: 100%;
+                justify-content: space-around;
+                margin-bottom: 0 !important;
+            }
+            .nav-btn {
+                flex-direction: column;
+                padding: 8px !important;
+                font-size: 10px !important;
+                gap: 4px !important;
+                text-align: center !important;
+            }
+            #main-content {
+                margin-left: 0 !important;
+                padding-bottom: 100px;
+            }
+            .sidebar-timer-box, .sidebar-footer { display: none !important; }
+        }
+
+        .nav-btn.active { background: var(--brand); color: white; }
         
         .timer-circle {
             background: conic-gradient(var(--brand) var(--progress), #1e293b 0deg);
-            border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;
         }
 
-        /* Offline indicator style */
         #offline-badge { display: none; }
         body.is-offline #offline-badge { display: block; }
+        
+        /* Smooth scrolling for chat */
+        #chat-win { scroll-behavior: smooth; }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="flex flex-col lg:flex-row min-h-screen">
 
-    <!-- Offline Notification Badge -->
-    <div id="offline-badge" class="fixed top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-full text-[10px] font-bold z-[2000] shadow-lg uppercase tracking-widest">
-        ⚠️ Offline Mode - No Internet
+    <div id="offline-badge" class="fixed top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-1.5 rounded-full text-[9px] font-bold z-[4000] shadow-lg uppercase tracking-widest">
+        Offline Mode
     </div>
 
     <!-- LOGIN SCREEN -->
-    <div id="auth-overlay" class="fixed inset-0 flex items-center justify-center p-6 transition-all duration-500">
-        <div class="bg-white w-full max-w-[420px] p-10 rounded-[2.5rem] shadow-2xl">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+    <div id="auth-overlay" class="fixed inset-0 flex items-center justify-center p-4 transition-all duration-500">
+        <div class="bg-white w-full max-w-md p-6 sm:p-10 rounded-[2rem] shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                 </div>
-                <h2 class="text-3xl font-black text-slate-900">Study Hub</h2>
-                <p class="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">Ready for Offline Study</p>
+                <h2 class="text-2xl font-black text-slate-900">Study Hub</h2>
+                <p class="text-slate-500 font-bold text-[9px] uppercase tracking-widest mt-1">Universal Study Environment</p>
             </div>
-            <div class="space-y-4">
-                <input type="text" id="login-name" placeholder="Name" class="ict-input w-full p-4 rounded-xl outline-none font-bold">
-                <input type="tel" id="login-phone" placeholder="Phone" class="ict-input w-full p-4 rounded-xl outline-none font-bold">
-                <input type="text" id="login-school" placeholder="School" class="ict-input w-full p-4 rounded-xl outline-none font-bold">
-                <button onclick="doLogin()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-blue-700 transition-all">Go Offline Pro</button>
+            <div class="space-y-3">
+                <input type="text" id="login-name" placeholder="Name" class="ict-input w-full p-4 rounded-xl outline-none font-semibold">
+                <input type="tel" id="login-phone" placeholder="Phone Number" class="ict-input w-full p-4 rounded-xl outline-none font-semibold">
+                <input type="text" id="login-school" placeholder="School/College" class="ict-input w-full p-4 rounded-xl outline-none font-semibold">
+                <button onclick="doLogin()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-[0.98] transition-all mt-2">Get Started</button>
             </div>
         </div>
     </div>
 
-    <!-- SIDEBAR -->
-    <aside id="main-sidebar" class="w-72 bg-slate-900 text-white fixed h-full hidden lg:flex flex-col p-6 overflow-y-auto z-[50]">
-        <div class="flex items-center gap-3 mb-8">
+    <!-- SIDEBAR / NAVIGATION -->
+    <aside id="main-sidebar" class="bg-slate-900 text-white fixed lg:w-72 lg:h-full hidden flex flex-col p-4 lg:p-6 z-[2000]">
+        <div class="hidden lg:flex items-center gap-3 mb-8">
             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">S</div>
-            <span class="font-bold text-lg tracking-tight">StudyHub <span class="text-blue-500">Offline</span></span>
+            <span class="font-bold text-lg tracking-tight">StudyHub <span class="text-blue-500">Pro</span></span>
         </div>
         
-        <nav class="space-y-1 mb-8">
-            <button onclick="tab('dashboard')" id="tab-dashboard" class="nav-btn active w-full text-left p-4 rounded-xl text-sm font-bold flex items-center gap-3">Dashboard</button>
-            <button onclick="tab('ai')" id="tab-ai" class="nav-btn w-full text-left p-4 rounded-xl text-sm font-bold text-slate-400 hover:text-white flex items-center gap-3">AI Assistant</button>
-            <button onclick="tab('tasks')" id="tab-tasks" class="nav-btn w-full text-left p-4 rounded-xl text-sm font-bold text-slate-400 hover:text-white flex items-center gap-3">Tasks</button>
-            <button onclick="tab('results')" id="tab-results" class="nav-btn w-full text-left p-4 rounded-xl text-sm font-bold text-slate-400 hover:text-white flex items-center gap-3">Results</button>
+        <nav class="lg:space-y-1">
+            <button onclick="tab('dashboard')" id="tab-dashboard" class="nav-btn active w-full text-left p-3 lg:p-4 rounded-xl text-sm font-bold flex items-center gap-3 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="lg:inline">Home</span>
+            </button>
+            <button onclick="tab('ai')" id="tab-ai" class="nav-btn w-full text-left p-3 lg:p-4 rounded-xl text-sm font-bold text-slate-400 flex items-center gap-3 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="lg:inline">AI Help</span>
+            </button>
+            <button onclick="tab('tasks')" id="tab-tasks" class="nav-btn w-full text-left p-3 lg:p-4 rounded-xl text-sm font-bold text-slate-400 flex items-center gap-3 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="lg:inline">Tasks</span>
+            </button>
+            <button onclick="tab('results')" id="tab-results" class="nav-btn w-full text-left p-3 lg:p-4 rounded-xl text-sm font-bold text-slate-400 flex items-center gap-3 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="lg:inline">Marks</span>
+            </button>
         </nav>
 
-        <!-- Sidebar Focus Timer -->
-        <div class="p-5 bg-slate-800/50 rounded-3xl border border-slate-700 mb-6 text-center">
-            <p class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">Focus Timer</p>
-            <div class="flex justify-center mb-4">
+        <!-- Sidebar Timer (Desktop Only) -->
+        <div class="sidebar-timer-box p-4 bg-slate-800/40 rounded-2xl border border-slate-700/50 mt-6 text-center">
+            <p class="text-[9px] font-bold text-slate-500 uppercase mb-3 tracking-widest">Focus Mode</p>
+            <div class="flex justify-center mb-3">
                 <div class="timer-circle" id="timer-ring" style="--progress: 0deg">
-                    <span id="timer-display" class="text-xl font-black">25:00</span>
+                    <span id="timer-display" class="text-lg font-black">25:00</span>
                 </div>
             </div>
             <div class="flex gap-2">
-                <button onclick="toggleTimer()" id="timer-btn" class="flex-1 bg-blue-600 py-2 rounded-lg text-[10px] font-black uppercase">Start</button>
-                <button onclick="resetTimer()" class="bg-slate-700 px-3 py-2 rounded-lg text-[10px] font-black uppercase">Reset</button>
+                <button onclick="toggleTimer()" id="timer-btn" class="flex-1 bg-blue-600 py-1.5 rounded-lg text-[9px] font-black uppercase">Start</button>
+                <button onclick="resetTimer()" class="bg-slate-700 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Reset</button>
             </div>
         </div>
 
-        <div class="mt-auto pt-6 border-t border-slate-800">
-            <div class="flex items-center justify-between mb-4">
-                <p class="text-[10px] font-bold text-slate-500 uppercase">Study Time</p>
-                <span id="total-study-time" class="text-blue-400 font-bold text-xs">0h 0m</span>
+        <div class="sidebar-footer mt-auto pt-4 border-t border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-[9px] font-bold text-slate-500 uppercase">Total Study</p>
+                <span id="total-study-time" class="text-blue-400 font-bold text-[11px]">0h 0m</span>
             </div>
-            <button onclick="logout()" class="w-full p-4 text-xs font-bold text-red-500 hover:bg-red-500/10 rounded-xl transition-all uppercase text-left">Logout</button>
+            <button onclick="logout()" class="w-full py-3 text-[10px] font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-all uppercase text-left pl-2">Logout</button>
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main id="main-content" class="flex-1 lg:ml-72 p-6 lg:p-10 hidden bg-slate-50 min-h-screen">
-        <header class="flex justify-between items-center mb-10">
-            <div>
-                <h1 id="welcome-msg" class="text-3xl font-black text-slate-900">Hello Student</h1>
-                <p id="welcome-school" class="text-slate-400 text-xs font-bold uppercase mt-1">Offline Hub Enabled</p>
-            </div>
-            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg" id="avatar">?</div>
-        </header>
+    <main id="main-content" class="flex-1 lg:ml-72 hidden bg-slate-50 min-h-screen">
+        <div class="max-w-5xl mx-auto p-5 sm:p-8 lg:p-12">
+            
+            <header class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 id="welcome-msg" class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">Hello</h1>
+                    <p id="welcome-school" class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-1">Ready to study</p>
+                </div>
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg text-lg" id="avatar">?</div>
+            </header>
 
-        <!-- Dashboard -->
-        <section id="sec-dashboard" class="tab-sec space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl">
-                    <p class="text-[10px] font-bold uppercase opacity-70">Average Grade</p>
-                    <h2 class="text-5xl font-black mt-1" id="avg-stat">0%</h2>
+            <!-- Dashboard -->
+            <section id="sec-dashboard" class="tab-sec space-y-5 sm:space-y-8">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <div class="bg-blue-600 p-6 sm:p-8 rounded-[2rem] text-white shadow-xl shadow-blue-200">
+                        <p class="text-[9px] font-bold uppercase opacity-80 tracking-widest">Avg Grade</p>
+                        <h2 class="text-4xl sm:text-5xl font-black mt-1" id="avg-stat">0%</h2>
+                    </div>
+                    <div class="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Tasks Completed</p>
+                        <h2 class="text-3xl sm:text-4xl font-black mt-1" id="task-stat">0</h2>
+                    </div>
+                    <div class="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Study Hours</p>
+                        <h2 class="text-3xl sm:text-4xl font-black mt-1" id="time-stat-display">0h</h2>
+                    </div>
                 </div>
-                <div class="bg-white p-8 rounded-[2.5rem] border">
-                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Tasks Done</p>
-                    <h2 class="text-4xl font-black mt-1" id="task-stat">0</h2>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] border">
-                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Time Studied</p>
-                    <h2 class="text-4xl font-black mt-1" id="time-stat-display">0h</h2>
-                </div>
-            </div>
 
-            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm">
+                <div class="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h3 class="font-bold text-lg">Performance Trend</h3>
+                        <select id="subject-filter" onchange="updateChart()" class="w-full sm:w-auto bg-slate-50 p-2.5 rounded-xl text-xs font-bold border-none outline-none">
+                            <option value="All">All Subjects</option>
+                        </select>
+                    </div>
+                    <div class="relative h-[250px] sm:h-[350px] w-full">
+                        <canvas id="perfChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Assistant -->
+            <section id="sec-ai" class="tab-sec hidden">
+                <div class="bg-white rounded-[2rem] border border-slate-100 shadow-xl flex flex-col h-[70vh] max-w-2xl mx-auto overflow-hidden">
+                    <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse online-dot"></div>
+                            <span class="text-xs font-bold uppercase">AI Tutor</span>
+                        </div>
+                        <span class="text-[8px] opacity-60">Connected to Gemini</span>
+                    </div>
+                    <div id="chat-win" class="flex-1 p-5 overflow-y-auto bg-slate-50 space-y-4">
+                        <div class="p-4 bg-blue-50 text-blue-800 rounded-2xl text-[11px] border border-blue-100 leading-relaxed">
+                            💡 <b>Tip:</b> AI needs internet connection. Other Study Hub features work fully offline.
+                        </div>
+                    </div>
+                    <div class="p-3 sm:p-4 bg-white border-t flex gap-2">
+                        <input type="text" id="ai-input" placeholder="Ask anything..." class="flex-1 p-3.5 bg-slate-50 rounded-xl outline-none text-sm font-medium border border-slate-100">
+                        <button onclick="askAI()" id="ai-btn" class="bg-blue-600 text-white px-5 sm:px-8 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-all">Send</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tasks -->
+            <section id="sec-tasks" class="tab-sec hidden max-w-xl mx-auto">
+                <div class="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <h2 class="text-2xl font-black mb-6">Daily Goals</h2>
+                    <div class="flex flex-col sm:flex-row gap-2 mb-6">
+                        <input type="text" id="task-input" placeholder="What's your goal?" class="flex-1 p-4 bg-slate-50 rounded-xl outline-none border border-slate-100 font-medium">
+                        <button onclick="addTask()" class="bg-slate-900 text-white px-6 py-4 sm:py-0 rounded-xl font-bold shadow-lg active:scale-95 transition-all">Add Goal</button>
+                    </div>
+                    <div id="task-list" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- Results -->
+            <section id="sec-results" class="tab-sec hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-bold text-lg">Subject Performance</h3>
-                    <select id="subject-filter" onchange="updateChart()" class="bg-slate-100 p-2 rounded-lg text-xs font-bold border-none">
-                        <option value="All">All Subjects</option>
-                    </select>
+                    <h2 class="text-2xl font-black">My Progress</h2>
+                    <button onclick="openModal()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all">+ Add Mark</button>
                 </div>
-                <div class="h-[300px] w-full"><canvas id="perfChart"></canvas></div>
-            </div>
-        </section>
-
-        <!-- AI Assistant (Only part requiring online) -->
-        <section id="sec-ai" class="tab-sec hidden">
-            <div class="bg-white rounded-[2.5rem] border shadow-xl flex flex-col h-[500px] max-w-2xl mx-auto overflow-hidden">
-                <div class="p-4 bg-slate-900 text-white flex justify-between">
-                    <span class="font-bold">Gemini AI (Online Only)</span>
-                    <span class="text-[9px] online-dot text-green-400 font-bold uppercase">Online</span>
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left min-w-[500px]">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="p-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject</th>
+                                    <th class="p-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Result</th>
+                                    <th class="p-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
+                                    <th class="p-5"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="res-body"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div id="chat-win" class="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4">
-                    <div class="p-3 bg-white rounded-xl border text-sm italic text-slate-500">Note: AI requires internet connection.</div>
-                </div>
-                <div class="p-4 bg-white border-t flex gap-2">
-                    <input type="text" id="ai-input" placeholder="Enter query..." class="flex-1 p-4 bg-slate-100 rounded-xl outline-none">
-                    <button onclick="askAI()" id="ai-btn" class="bg-blue-600 text-white px-6 rounded-xl font-bold">Ask</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Tasks -->
-        <section id="sec-tasks" class="tab-sec hidden max-w-xl mx-auto">
-            <div class="bg-white p-8 rounded-[2.5rem] border">
-                <h2 class="text-2xl font-black mb-6">Study Checklist</h2>
-                <div class="flex gap-2 mb-6">
-                    <input type="text" id="task-input" placeholder="Next goal?" class="flex-1 p-4 bg-slate-50 rounded-xl outline-none border">
-                    <button onclick="addTask()" class="bg-slate-900 text-white px-6 rounded-xl font-bold">Add</button>
-                </div>
-                <div id="task-list" class="space-y-2"></div>
-            </div>
-        </section>
-
-        <!-- Results -->
-        <section id="sec-results" class="tab-sec hidden">
-            <div class="flex justify-between mb-6">
-                <h2 class="text-2xl font-black">My Results</h2>
-                <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold">+ Record</button>
-            </div>
-            <div class="bg-white rounded-[2rem] border overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50">
-                        <tr><th class="p-6 text-xs font-bold text-slate-400">SUBJECT</th><th class="p-6 text-xs font-bold text-slate-400">MARKS</th><th class="p-6 text-xs font-bold text-slate-400">DATE</th><th class="p-6"></th></tr>
-                    </thead>
-                    <tbody id="res-body"></tbody>
-                </table>
-            </div>
-        </section>
+            </section>
+        </div>
     </main>
 
-    <!-- Modal -->
-    <div id="modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[2000] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-xs rounded-[2rem] p-8">
-            <h3 class="text-xl font-bold mb-4">New Mark</h3>
-            <input type="text" id="m-sub" placeholder="Subject" class="w-full p-4 bg-slate-50 rounded-xl mb-3 outline-none border">
-            <input type="number" id="m-mark" placeholder="Percentage" class="w-full p-4 bg-slate-50 rounded-xl mb-4 outline-none border">
-            <div class="flex gap-2">
-                <button onclick="saveResult()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl">Save</button>
-                <button onclick="closeModal()" class="flex-1 bg-slate-100 font-bold py-3 rounded-xl">Back</button>
+    <!-- Modal for Marks -->
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[3000] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-[2rem] p-6 sm:p-8 shadow-2xl scale-in">
+            <h3 class="text-xl font-bold mb-5">Record New Mark</h3>
+            <div class="space-y-3">
+                <input type="text" id="m-sub" placeholder="Subject Name" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-slate-100 font-medium">
+                <input type="number" id="m-mark" placeholder="Percentage (%)" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-slate-100 font-medium">
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="saveResult()" class="flex-1 bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all">Save</button>
+                <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-all">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuration
+        // --- Core Data & LocalStorage ---
         const apiKey = ""; 
         let results = JSON.parse(localStorage.getItem('sh_offline_results')) || [];
         let tasks = JSON.parse(localStorage.getItem('sh_offline_tasks')) || [];
         let totalSeconds = parseInt(localStorage.getItem('sh_total_time')) || 0;
         let chart = null;
 
-        // Timer Logic
+        // Timer State
         let timerActive = false;
         let timerSeconds = 25 * 60;
         let timerInterval;
 
-        // Offline / Online Status Detection
+        // --- Connectivity ---
         function updateOnlineStatus() {
             if (navigator.onLine) {
                 document.body.classList.remove('is-offline');
-                document.querySelectorAll('.online-dot').forEach(el => el.classList.replace('text-amber-500', 'text-green-400'));
+                document.querySelectorAll('.online-dot').forEach(el => {
+                    el.classList.remove('bg-amber-400');
+                    el.classList.add('bg-green-400');
+                });
             } else {
                 document.body.classList.add('is-offline');
-                document.querySelectorAll('.online-dot').forEach(el => el.classList.replace('text-green-400', 'text-amber-500'));
+                document.querySelectorAll('.online-dot').forEach(el => {
+                    el.classList.remove('bg-green-400');
+                    el.classList.add('bg-amber-400');
+                });
             }
         }
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
 
+        // --- Auth & Onboarding ---
         function doLogin() {
             const n = document.getElementById('login-name').value;
-            const p = document.getElementById('login-phone').value;
             const s = document.getElementById('login-school').value;
-            if(n && p && s) {
+            if(n.length > 2 && s.length > 2) {
                 localStorage.setItem('sh_user_offline', JSON.stringify({name: n, school: s}));
                 checkAuth();
+            } else {
+                alert("Please enter valid details");
             }
         }
 
@@ -242,7 +317,9 @@
                 document.getElementById('auth-overlay').classList.add('hidden');
                 document.getElementById('main-sidebar').classList.remove('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
-                document.getElementById('welcome-msg').innerText = `Hi, ${user.name.split(' ')[0]}!`;
+                
+                const firstName = user.name.split(' ')[0];
+                document.getElementById('welcome-msg').innerText = `Hello, ${firstName}!`;
                 document.getElementById('welcome-school').innerText = user.school;
                 document.getElementById('avatar').innerText = user.name[0].toUpperCase();
                 
@@ -256,7 +333,7 @@
             }
         }
 
-        // --- Focus Timer ---
+        // --- Timer Engine ---
         function toggleTimer() {
             const btn = document.getElementById('timer-btn');
             if(timerActive) {
@@ -270,7 +347,7 @@
                     if(timerSeconds % 30 === 0) localStorage.setItem('sh_total_time', totalSeconds);
                     if(timerSeconds <= 0) {
                         clearInterval(timerInterval);
-                        alert("Session complete! Great job.");
+                        new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(()=>{});
                         resetTimer();
                     }
                 }, 1000);
@@ -290,7 +367,8 @@
         function updateTimerUI() {
             const m = Math.floor(timerSeconds / 60);
             const s = timerSeconds % 60;
-            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            const text = `${m}:${s < 10 ? '0' : ''}${s}`;
+            document.getElementById('timer-display').innerText = text;
             const progress = ((25 * 60 - timerSeconds) / (25 * 60)) * 360;
             document.getElementById('timer-ring').style.setProperty('--progress', `${progress}deg`);
             updateTotalTimeDisplay();
@@ -303,7 +381,7 @@
             document.getElementById('time-stat-display').innerText = `${h}h`;
         }
 
-        // --- Analytics ---
+        // --- Charts & Analytics ---
         function populateFilters() {
             const filter = document.getElementById('subject-filter');
             const subs = [...new Set(results.map(r => r.subject))];
@@ -316,40 +394,85 @@
             const sel = document.getElementById('subject-filter').value;
             if(chart) chart.destroy();
 
-            let data = [];
+            let plotData = [];
+            let labels = [];
+
             if(sel === "All") {
-                const dates = [...new Set(results.map(r => r.date))];
+                const dates = [...new Set(results.map(r => r.date))].sort((a,b) => new Date(a) - new Date(b));
+                labels = dates;
                 dates.forEach(d => {
                     const marks = results.filter(r => r.date === d).map(r => r.mark);
-                    data.push({ x: d, y: marks.reduce((a, b) => a + b, 0) / marks.length });
+                    plotData.push(marks.reduce((a, b) => a + b, 0) / marks.length);
                 });
             } else {
-                data = results.filter(r => r.subject === sel).map(r => ({ x: r.date, y: r.mark }));
+                const filtered = results.filter(r => r.subject === sel).sort((a,b) => new Date(a) - new Date(b));
+                labels = filtered.map(r => r.date);
+                plotData = filtered.map(r => r.mark);
             }
 
             chart = new Chart(ctx, {
                 type: 'line',
-                data: { datasets: [{ label: sel, data: data, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.05)', tension: 0.3 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+                data: { 
+                    labels: labels,
+                    datasets: [{ 
+                        label: sel === "All" ? "Average Performance" : sel, 
+                        data: plotData, 
+                        borderColor: '#2563eb', 
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true, 
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderWidth: 2
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { beginAtZero: true, max: 100, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    } 
+                }
             });
         }
 
-        // --- Results Management ---
+        // --- Data Handling ---
         function saveResult() {
-            const s = document.getElementById('m-sub').value;
+            const s = document.getElementById('m-sub').value.trim();
             const m = parseInt(document.getElementById('m-mark').value);
-            if(s && !isNaN(m)) {
+            if(s && !isNaN(m) && m >= 0 && m <= 100) {
                 results.push({ subject: s, mark: m, date: new Date().toLocaleDateString() });
                 localStorage.setItem('sh_offline_results', JSON.stringify(results));
                 renderResults(); updateStats(); populateFilters(); updateChart(); closeModal();
+                document.getElementById('m-sub').value = '';
+                document.getElementById('m-mark').value = '';
             }
         }
 
         function renderResults() {
             const b = document.getElementById('res-body');
-            b.innerHTML = results.map((r, i) => `
-                <tr class="border-b"><td class="p-6 font-bold">${r.subject}</td><td class="p-6 font-black text-blue-600">${r.mark}%</td><td class="p-6 text-slate-400 text-xs">${r.date}</td><td class="p-6 text-right"><button onclick="results.splice(${i},1);localStorage.setItem('sh_offline_results',JSON.stringify(results));renderResults();updateStats();populateFilters();updateChart();" class="text-red-400 text-[10px] font-bold uppercase">Del</button></td></tr>
+            b.innerHTML = results.slice().reverse().map((r, i) => `
+                <tr class="border-b border-slate-50">
+                    <td class="p-5 font-bold text-sm text-slate-700">${r.subject}</td>
+                    <td class="p-5">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full font-black text-xs">${r.mark}%</span>
+                    </td>
+                    <td class="p-5 text-slate-400 text-[11px] font-medium">${r.date}</td>
+                    <td class="p-5 text-right">
+                        <button onclick="deleteResult(${results.length - 1 - i})" class="text-red-300 hover:text-red-500 transition-colors p-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                    </td>
+                </tr>
             `).join('');
+        }
+
+        function deleteResult(idx) {
+            results.splice(idx, 1);
+            localStorage.setItem('sh_offline_results', JSON.stringify(results));
+            renderResults(); updateStats(); populateFilters(); updateChart();
         }
 
         function updateStats() {
@@ -361,53 +484,106 @@
         // --- Task Management ---
         function addTask() {
             const i = document.getElementById('task-input');
-            if(i.value.trim()) { tasks.push({ text: i.value, done: false }); i.value = ''; saveTasks(); }
+            const text = i.value.trim();
+            if(text) { 
+                tasks.push({ text: text, done: false }); 
+                i.value = ''; 
+                saveTasks(); 
+            }
         }
-        function saveTasks() { localStorage.setItem('sh_offline_tasks', JSON.stringify(tasks)); renderTasks(); updateStats(); }
+        function saveTasks() { 
+            localStorage.setItem('sh_offline_tasks', JSON.stringify(tasks)); 
+            renderTasks(); 
+            updateStats(); 
+        }
         function renderTasks() {
             const l = document.getElementById('task-list');
             l.innerHTML = tasks.map((t, i) => `
-                <div class="flex items-center justify-between p-4 bg-white border rounded-2xl">
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" ${t.done?'checked':''} onchange="tasks[${i}].done=!tasks[${i}].done;saveTasks()" class="w-5 h-5">
-                        <span class="${t.done?'line-through text-slate-300':'font-bold'}">${t.text}</span>
+                <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group transition-all hover:bg-white hover:shadow-md">
+                    <div class="flex items-center gap-4">
+                        <div class="relative w-6 h-6">
+                            <input type="checkbox" ${t.done?'checked':''} onchange="tasks[${i}].done=!tasks[${i}].done;saveTasks()" 
+                                class="peer absolute inset-0 opacity-0 cursor-pointer z-10">
+                            <div class="w-6 h-6 border-2 border-slate-200 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 text-white scale-0 peer-checked:scale-100 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+                        </div>
+                        <span class="${t.done?'line-through text-slate-300 font-medium':'font-bold text-slate-700'} text-sm">${t.text}</span>
                     </div>
-                    <button onclick="tasks.splice(${i},1);saveTasks()" class="text-red-400 text-[10px] font-bold">REMOVE</button>
+                    <button onclick="tasks.splice(${i},1);saveTasks()" class="text-slate-300 hover:text-red-400 p-2 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
                 </div>
             `).join('');
         }
 
-        // --- AI (Online Only) ---
+        // --- AI (Online Required) ---
         async function askAI() {
             if(!navigator.onLine) {
-                alert("AI needs internet. Other features work offline.");
+                alert("The AI assistant requires internet. Other features remain offline.");
                 return;
             }
             const inp = document.getElementById('ai-input');
-            const q = inp.value.trim(); if(!q) return;
+            const q = inp.value.trim(); 
+            if(!q) return;
+
             const win = document.getElementById('chat-win');
-            win.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white p-3 rounded-xl text-sm">${q}</div></div>`;
+            win.innerHTML += `
+                <div class="flex justify-end">
+                    <div class="bg-blue-600 text-white p-3.5 rounded-2xl rounded-tr-none text-sm max-w-[85%] font-medium shadow-md">
+                        ${q}
+                    </div>
+                </div>
+            `;
             inp.value = '';
+            win.scrollTop = win.scrollHeight;
+
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: q }] }] }) });
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ contents: [{ parts: [{ text: q }] }] }) 
+                });
                 const d = await res.json();
                 const reply = d.candidates[0].content.parts[0].text;
-                win.innerHTML += `<div class="flex justify-start"><div class="bg-white border p-3 rounded-xl text-sm">${reply}</div></div>`;
-            } catch(e) { win.innerHTML += `<div class="text-xs text-red-500">Service unavailable offline.</div>`; }
+                
+                win.innerHTML += `
+                    <div class="flex justify-start">
+                        <div class="bg-white border border-slate-100 p-4 rounded-2xl rounded-tl-none text-sm max-w-[85%] font-medium shadow-sm leading-relaxed">
+                            ${reply}
+                        </div>
+                    </div>
+                `;
+            } catch(e) { 
+                win.innerHTML += `<div class="text-[10px] text-red-500 font-bold uppercase text-center py-2">Connection Error. Please check your internet.</div>`; 
+            }
             win.scrollTop = win.scrollHeight;
         }
 
+        // --- Navigation ---
         function tab(id) {
             document.querySelectorAll('.tab-sec').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-' + id).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-            if(id === 'dashboard') setTimeout(updateChart, 100);
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('active', 'text-white');
+                b.classList.add('text-slate-400');
+            });
+            const activeBtn = document.getElementById('tab-' + id);
+            activeBtn.classList.add('active', 'text-white');
+            activeBtn.classList.remove('text-slate-400');
+            
+            if(id === 'dashboard') setTimeout(updateChart, 50);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-        function logout() { localStorage.clear(); location.reload(); }
+        function logout() { 
+            if(confirm("Logout and clear local data?")) {
+                localStorage.clear(); 
+                location.reload(); 
+            }
+        }
 
         window.onload = checkAuth;
     </script>
