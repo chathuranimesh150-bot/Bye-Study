@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Hub | Offline Pro</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- External Libraries (Will be cached by browser once loaded) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #0f172a; --brand: #2563eb; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+
+        #auth-overlay {
+            background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98)), 
+                        url('https://images.unsplash.com/photo-1434031211660-84c11e50a3a7?auto=format&fit=crop&q=80');
+            background-size: cover; background-position: center; z-index: 1000;
+        }
+
+        .ict-input { border: 2px solid #f1f5f9; background: #f8fafc; transition: all 0.2s; }
+        .ict-input:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+
+        .nav-btn.active { background: var(--brand); color: white; transform: scale(1.02); }
+        
+        .timer-circle {
+            background: conic-gradient(var(--brand) var(--progress), #1e293b 0deg);
+            border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Offline indicator style */
+        #offline-badge { display: none; }
+        body.is-offline #offline-badge { display: block; }
+    </style>
+</head>
+<body class="flex min-h-screen">
+
+    <!-- Offline Notification Badge -->
+    <div id="offline-badge" class="fixed top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-full text-[10px] font-bold z-[2000] shadow-lg uppercase tracking-widest">
+        ⚠️ Offline Mode - No Internet
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="auth-overlay" class="fixed inset-0 flex items-center justify-center p-6 transition-all duration-500">
+        <div class="bg-white w-full max-w-[420px] p-10 rounded-[2.5rem] shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <h2 class="text-3xl font-black text-slate-900">Study Hub</h2>
+                <p class="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">Ready for Offline Study</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="login-name" placeholder="Name" class="ict-input w-full p-4 rounded-xl outline-none font-bold">
+                <input type="tel" id="login-phone" placeholder="Phone" class="ict-input w-full p-4 rounded-xl outline-none font-bold">
+                <input type="text" id="login-school" placeholder="School" class="ict-input w-full p-4 rounded-xl outline-none font-bold">
+                <button onclick="doLogin()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-blue-700 transition-all">Go Offline Pro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside id="main-sidebar" class="w-72 bg-slate-900 text-white fixed h-full hidden lg:flex flex-col p-6 overflow-y-auto z-[50]">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">S</div>
+            <span class="font-bold text-lg tracking-tight">StudyHub <span class="text-blue-500">Offline</span></span>
+        </div>
+        
+        <nav class="space-y-1 mb-8">
+            <button onclick="tab('dashboard')" id="tab-dashboard" class="nav-btn active w-full text-left p-4 rounded-xl text-sm font-bold flex items-center gap-3">Dashboard</button>
+            <button onclick="tab('ai')" id="tab-ai" class="nav-btn w-full text-left p-4 rounded-xl text-sm font-bold text-slate-400 hover:text-white flex items-center gap-3">AI Assistant</button>
+            <button onclick="tab('tasks')" id="tab-tasks" class="nav-btn w-full text-left p-4 rounded-xl text-sm font-bold text-slate-400 hover:text-white flex items-center gap-3">Tasks</button>
+            <button onclick="tab('results')" id="tab-results" class="nav-btn w-full text-left p-4 rounded-xl text-sm font-bold text-slate-400 hover:text-white flex items-center gap-3">Results</button>
+        </nav>
+
+        <!-- Sidebar Focus Timer -->
+        <div class="p-5 bg-slate-800/50 rounded-3xl border border-slate-700 mb-6 text-center">
+            <p class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">Focus Timer</p>
+            <div class="flex justify-center mb-4">
+                <div class="timer-circle" id="timer-ring" style="--progress: 0deg">
+                    <span id="timer-display" class="text-xl font-black">25:00</span>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleTimer()" id="timer-btn" class="flex-1 bg-blue-600 py-2 rounded-lg text-[10px] font-black uppercase">Start</button>
+                <button onclick="resetTimer()" class="bg-slate-700 px-3 py-2 rounded-lg text-[10px] font-black uppercase">Reset</button>
+            </div>
+        </div>
+
+        <div class="mt-auto pt-6 border-t border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+                <p class="text-[10px] font-bold text-slate-500 uppercase">Study Time</p>
+                <span id="total-study-time" class="text-blue-400 font-bold text-xs">0h 0m</span>
+            </div>
+            <button onclick="logout()" class="w-full p-4 text-xs font-bold text-red-500 hover:bg-red-500/10 rounded-xl transition-all uppercase text-left">Logout</button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content" class="flex-1 lg:ml-72 p-6 lg:p-10 hidden bg-slate-50 min-h-screen">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 id="welcome-msg" class="text-3xl font-black text-slate-900">Hello Student</h1>
+                <p id="welcome-school" class="text-slate-400 text-xs font-bold uppercase mt-1">Offline Hub Enabled</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg" id="avatar">?</div>
+        </header>
+
+        <!-- Dashboard -->
+        <section id="sec-dashboard" class="tab-sec space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl">
+                    <p class="text-[10px] font-bold uppercase opacity-70">Average Grade</p>
+                    <h2 class="text-5xl font-black mt-1" id="avg-stat">0%</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] border">
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Tasks Done</p>
+                    <h2 class="text-4xl font-black mt-1" id="task-stat">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] border">
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Time Studied</p>
+                    <h2 class="text-4xl font-black mt-1" id="time-stat-display">0h</h2>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-lg">Subject Performance</h3>
+                    <select id="subject-filter" onchange="updateChart()" class="bg-slate-100 p-2 rounded-lg text-xs font-bold border-none">
+                        <option value="All">All Subjects</option>
+                    </select>
+                </div>
+                <div class="h-[300px] w-full"><canvas id="perfChart"></canvas></div>
+            </div>
+        </section>
+
+        <!-- AI Assistant (Only part requiring online) -->
+        <section id="sec-ai" class="tab-sec hidden">
+            <div class="bg-white rounded-[2.5rem] border shadow-xl flex flex-col h-[500px] max-w-2xl mx-auto overflow-hidden">
+                <div class="p-4 bg-slate-900 text-white flex justify-between">
+                    <span class="font-bold">Gemini AI (Online Only)</span>
+                    <span class="text-[9px] online-dot text-green-400 font-bold uppercase">Online</span>
+                </div>
+                <div id="chat-win" class="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4">
+                    <div class="p-3 bg-white rounded-xl border text-sm italic text-slate-500">Note: AI requires internet connection.</div>
+                </div>
+                <div class="p-4 bg-white border-t flex gap-2">
+                    <input type="text" id="ai-input" placeholder="Enter query..." class="flex-1 p-4 bg-slate-100 rounded-xl outline-none">
+                    <button onclick="askAI()" id="ai-btn" class="bg-blue-600 text-white px-6 rounded-xl font-bold">Ask</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tasks -->
+        <section id="sec-tasks" class="tab-sec hidden max-w-xl mx-auto">
+            <div class="bg-white p-8 rounded-[2.5rem] border">
+                <h2 class="text-2xl font-black mb-6">Study Checklist</h2>
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="task-input" placeholder="Next goal?" class="flex-1 p-4 bg-slate-50 rounded-xl outline-none border">
+                    <button onclick="addTask()" class="bg-slate-900 text-white px-6 rounded-xl font-bold">Add</button>
+                </div>
+                <div id="task-list" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- Results -->
+        <section id="sec-results" class="tab-sec hidden">
+            <div class="flex justify-between mb-6">
+                <h2 class="text-2xl font-black">My Results</h2>
+                <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold">+ Record</button>
+            </div>
+            <div class="bg-white rounded-[2rem] border overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50">
+                        <tr><th class="p-6 text-xs font-bold text-slate-400">SUBJECT</th><th class="p-6 text-xs font-bold text-slate-400">MARKS</th><th class="p-6 text-xs font-bold text-slate-400">DATE</th><th class="p-6"></th></tr>
+                    </thead>
+                    <tbody id="res-body"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[2000] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-[2rem] p-8">
+            <h3 class="text-xl font-bold mb-4">New Mark</h3>
+            <input type="text" id="m-sub" placeholder="Subject" class="w-full p-4 bg-slate-50 rounded-xl mb-3 outline-none border">
+            <input type="number" id="m-mark" placeholder="Percentage" class="w-full p-4 bg-slate-50 rounded-xl mb-4 outline-none border">
+            <div class="flex gap-2">
+                <button onclick="saveResult()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl">Save</button>
+                <button onclick="closeModal()" class="flex-1 bg-slate-100 font-bold py-3 rounded-xl">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const apiKey = ""; 
+        let results = JSON.parse(localStorage.getItem('sh_offline_results')) || [];
+        let tasks = JSON.parse(localStorage.getItem('sh_offline_tasks')) || [];
+        let totalSeconds = parseInt(localStorage.getItem('sh_total_time')) || 0;
+        let chart = null;
+
+        // Timer Logic
+        let timerActive = false;
+        let timerSeconds = 25 * 60;
+        let timerInterval;
+
+        // Offline / Online Status Detection
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                document.body.classList.remove('is-offline');
+                document.querySelectorAll('.online-dot').forEach(el => el.classList.replace('text-amber-500', 'text-green-400'));
+            } else {
+                document.body.classList.add('is-offline');
+                document.querySelectorAll('.online-dot').forEach(el => el.classList.replace('text-green-400', 'text-amber-500'));
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        function doLogin() {
+            const n = document.getElementById('login-name').value;
+            const p = document.getElementById('login-phone').value;
+            const s = document.getElementById('login-school').value;
+            if(n && p && s) {
+                localStorage.setItem('sh_user_offline', JSON.stringify({name: n, school: s}));
+                checkAuth();
+            }
+        }
+
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('sh_user_offline'));
+            if(user) {
+                document.getElementById('auth-overlay').classList.add('hidden');
+                document.getElementById('main-sidebar').classList.remove('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                document.getElementById('welcome-msg').innerText = `Hi, ${user.name.split(' ')[0]}!`;
+                document.getElementById('welcome-school').innerText = user.school;
+                document.getElementById('avatar').innerText = user.name[0].toUpperCase();
+                
+                updateTotalTimeDisplay();
+                populateFilters();
+                updateStats();
+                updateChart();
+                renderResults();
+                renderTasks();
+                updateOnlineStatus();
+            }
+        }
+
+        // --- Focus Timer ---
+        function toggleTimer() {
+            const btn = document.getElementById('timer-btn');
+            if(timerActive) {
+                clearInterval(timerInterval);
+                btn.innerText = "Resume";
+            } else {
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    totalSeconds++;
+                    updateTimerUI();
+                    if(timerSeconds % 30 === 0) localStorage.setItem('sh_total_time', totalSeconds);
+                    if(timerSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        alert("Session complete! Great job.");
+                        resetTimer();
+                    }
+                }, 1000);
+                btn.innerText = "Pause";
+            }
+            timerActive = !timerActive;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerActive = false;
+            timerSeconds = 25 * 60;
+            document.getElementById('timer-btn').innerText = "Start";
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            const m = Math.floor(timerSeconds / 60);
+            const s = timerSeconds % 60;
+            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            const progress = ((25 * 60 - timerSeconds) / (25 * 60)) * 360;
+            document.getElementById('timer-ring').style.setProperty('--progress', `${progress}deg`);
+            updateTotalTimeDisplay();
+        }
+
+        function updateTotalTimeDisplay() {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            document.getElementById('total-study-time').innerText = `${h}h ${m}m`;
+            document.getElementById('time-stat-display').innerText = `${h}h`;
+        }
+
+        // --- Analytics ---
+        function populateFilters() {
+            const filter = document.getElementById('subject-filter');
+            const subs = [...new Set(results.map(r => r.subject))];
+            filter.innerHTML = '<option value="All">Summary Trend</option>';
+            subs.forEach(s => filter.innerHTML += `<option value="${s}">${s}</option>`);
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('perfChart').getContext('2d');
+            const sel = document.getElementById('subject-filter').value;
+            if(chart) chart.destroy();
+
+            let data = [];
+            if(sel === "All") {
+                const dates = [...new Set(results.map(r => r.date))];
+                dates.forEach(d => {
+                    const marks = results.filter(r => r.date === d).map(r => r.mark);
+                    data.push({ x: d, y: marks.reduce((a, b) => a + b, 0) / marks.length });
+                });
+            } else {
+                data = results.filter(r => r.subject === sel).map(r => ({ x: r.date, y: r.mark }));
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { datasets: [{ label: sel, data: data, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.05)', tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
+
+        // --- Results Management ---
+        function saveResult() {
+            const s = document.getElementById('m-sub').value;
+            const m = parseInt(document.getElementById('m-mark').value);
+            if(s && !isNaN(m)) {
+                results.push({ subject: s, mark: m, date: new Date().toLocaleDateString() });
+                localStorage.setItem('sh_offline_results', JSON.stringify(results));
+                renderResults(); updateStats(); populateFilters(); updateChart(); closeModal();
+            }
+        }
+
+        function renderResults() {
+            const b = document.getElementById('res-body');
+            b.innerHTML = results.map((r, i) => `
+                <tr class="border-b"><td class="p-6 font-bold">${r.subject}</td><td class="p-6 font-black text-blue-600">${r.mark}%</td><td class="p-6 text-slate-400 text-xs">${r.date}</td><td class="p-6 text-right"><button onclick="results.splice(${i},1);localStorage.setItem('sh_offline_results',JSON.stringify(results));renderResults();updateStats();populateFilters();updateChart();" class="text-red-400 text-[10px] font-bold uppercase">Del</button></td></tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            const sum = results.reduce((a, b) => a + b.mark, 0);
+            document.getElementById('avg-stat').innerText = results.length ? Math.round(sum/results.length) + "%" : "0%";
+            document.getElementById('task-stat').innerText = tasks.filter(t => t.done).length;
+        }
+
+        // --- Task Management ---
+        function addTask() {
+            const i = document.getElementById('task-input');
+            if(i.value.trim()) { tasks.push({ text: i.value, done: false }); i.value = ''; saveTasks(); }
+        }
+        function saveTasks() { localStorage.setItem('sh_offline_tasks', JSON.stringify(tasks)); renderTasks(); updateStats(); }
+        function renderTasks() {
+            const l = document.getElementById('task-list');
+            l.innerHTML = tasks.map((t, i) => `
+                <div class="flex items-center justify-between p-4 bg-white border rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" ${t.done?'checked':''} onchange="tasks[${i}].done=!tasks[${i}].done;saveTasks()" class="w-5 h-5">
+                        <span class="${t.done?'line-through text-slate-300':'font-bold'}">${t.text}</span>
+                    </div>
+                    <button onclick="tasks.splice(${i},1);saveTasks()" class="text-red-400 text-[10px] font-bold">REMOVE</button>
+                </div>
+            `).join('');
+        }
+
+        // --- AI (Online Only) ---
+        async function askAI() {
+            if(!navigator.onLine) {
+                alert("AI needs internet. Other features work offline.");
+                return;
+            }
+            const inp = document.getElementById('ai-input');
+            const q = inp.value.trim(); if(!q) return;
+            const win = document.getElementById('chat-win');
+            win.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white p-3 rounded-xl text-sm">${q}</div></div>`;
+            inp.value = '';
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: q }] }] }) });
+                const d = await res.json();
+                const reply = d.candidates[0].content.parts[0].text;
+                win.innerHTML += `<div class="flex justify-start"><div class="bg-white border p-3 rounded-xl text-sm">${reply}</div></div>`;
+            } catch(e) { win.innerHTML += `<div class="text-xs text-red-500">Service unavailable offline.</div>`; }
+            win.scrollTop = win.scrollHeight;
+        }
+
+        function tab(id) {
+            document.querySelectorAll('.tab-sec').forEach(s => s.classList.add('hidden'));
+            document.getElementById('sec-' + id).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            if(id === 'dashboard') setTimeout(updateChart, 100);
+        }
+
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+        function logout() { localStorage.clear(); location.reload(); }
+
+        window.onload = checkAuth;
+    </script>
+</body>
+</html>
